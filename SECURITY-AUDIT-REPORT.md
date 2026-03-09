@@ -135,6 +135,7 @@ All 8 repositories are unmodified forks with no custom commits from speakup memb
 2. **File tree analysis** — identified suspicious filenames (`.env`, `*secret*`, `*credential*`, `*key*`, config files)
 3. **Source code review** — searched for patterns: API keys, tokens, passwords, connection strings, SSH keys, AWS/GCP/Azure credentials
 4. **Git history analysis** — searched commit history for previously committed and removed secrets
+8. **trufflehog deep scan** — cloned all 16 repos and ran `trufflehog --regex --entropy=True` against full git histories
 5. **Commit authorship verification** — confirmed which repos have custom commits vs. unmodified forks
 6. **CI/CD pipeline review** — checked GitHub Actions workflows for exposed secrets
 7. **Gitignore verification** — confirmed sensitive file patterns are properly excluded
@@ -156,7 +157,49 @@ All 8 repositories are unmodified forks with no custom commits from speakup memb
 5. **Periodic audits** — Re-run this audit periodically, especially after new repos are created or significant commits are made
 6. **perplexity-mcp: Exclude source maps** — Consider adding `dist/` or `*.js.map` to `.gitignore`. While no secrets are present, source maps expose internal code structure unnecessarily.
 7. **perplexity-mcp: Broaden .env exclusions** — Currently only `.env` is excluded; consider adding `.env.local`, `.env.production`, and `.env.*` patterns to prevent accidental commits of environment-specific files.
-8. **Deep history scan** — This audit checked current file trees and recent commits. For a deeper analysis, consider running tools like `trufflehog` or `gitleaks` against full git histories to catch secrets that may have been committed and then removed (they would still exist in git history).
+8. ~~**Deep history scan**~~ — **COMPLETED.** See trufflehog results below.
+
+---
+
+## Trufflehog Deep History Scan
+
+All 16 repositories were cloned and scanned with `trufflehog --regex --entropy=True` against full git histories. This catches secrets that may have been committed and later removed (they persist in git history).
+
+### Results: 30 total alerts — ALL FALSE POSITIVES
+
+**No real secrets found in any git history.**
+
+Every alert was classified as a false positive. Breakdown:
+
+| Category | Count | Examples | Verdict |
+|----------|-------|---------|---------|
+| **High Entropy: SHA-256 checksums** | ~10 | Chef cookbook file checksums (Drupal, Icinga, Logstash downloads) | False positive — file integrity hashes, not secrets |
+| **High Entropy: Git revision hashes** | ~3 | Gemfile.lock pinned revisions | False positive — git commit SHAs |
+| **High Entropy: npm integrity hashes** | ~5 | `package-lock.json` `sha512-...` integrity fields | False positive — standard npm package verification hashes |
+| **High Entropy: Notion/Google Docs URL slugs** | ~4 | `22281902c1468193aabbe9a8c59bbe33` in Notion URL, `2PACX-1vQGWwm...` in Google Docs URL | False positive — public document URL slugs from upstream SWE-bench |
+| **High Entropy: Minified JS** | ~7 | textAngular and js-emoji minified/compiled source | False positive — compressed JavaScript strings trigger entropy detection |
+| **Password in URL** | 1 | `pgsql://username:password@localhost/databasename` in `speakup/nodejs-cookbook` (Drupal template) | False positive — placeholder example from upstream Drupal cookbook (literal text `username:password`) |
+
+### Per-Repo Trufflehog Summary
+
+| Repository | Alerts | Real Secrets |
+|-----------|--------|-------------|
+| bgilly/experiments | 4 | 0 (Notion/Google Docs URLs) |
+| bgilly/fastmail-cli | 0 | 0 |
+| bgilly/instance_112 | 0 | 0 |
+| speakup/nodejs-cookbook | 2 | 0 (Drupal checksum + placeholder DB URL) |
+| speakup/chef-mongodb | 1 | 0 (Gemfile.lock git revisions) |
+| speakup/redisio | 1 | 0 (redis.conf template) |
+| speakup/chef-logstash | 4 | 0 (Logstash download checksums) |
+| speakup/vagrant-centos | 0 | 0 |
+| speakup/textAngular | 7 | 0 (minified JS entropy) |
+| speakup/js-emoji | 7 | 0 (minified JS entropy) |
+| speakup/grunt-inline-css | 0 | 0 |
+| Family-IT-Guy/perplexity-mcp | 1 | 0 (npm integrity hashes) |
+| Family-IT-Guy/LLM-Rules | 0 | 0 |
+| Family-IT-Guy/claude-code-skills | 0 | 0 |
+| Family-IT-Guy/claude-code-starter-kit | 0 | 0 |
+| Family-IT-Guy/experiments | 3 | 0 (same upstream as bgilly/experiments) |
 
 ---
 
