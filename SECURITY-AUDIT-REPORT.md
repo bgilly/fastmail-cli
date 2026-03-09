@@ -151,9 +151,12 @@ All 8 repositories are unmodified forks with no custom commits from speakup memb
 
 1. **Continue current practices** — All original repos follow security best practices (env vars, .gitignore, placeholder examples)
 2. **Consider archiving stale forks** — The 11 unmodified forks (speakup org especially, dating to 2011-2015) serve no apparent purpose and increase surface area. Consider making them private or deleting them.
-3. **Enable GitHub secret scanning** — If not already enabled, turn on GitHub's built-in secret scanning alerts for all organizations
+3. **Enable GitHub secret scanning** — If not already enabled, turn on GitHub's built-in secret scanning and push protection for all organizations
 4. **Enable branch protection** — Ensure main/master branches have protection rules to prevent accidental secret commits
 5. **Periodic audits** — Re-run this audit periodically, especially after new repos are created or significant commits are made
+6. **perplexity-mcp: Exclude source maps** — Consider adding `dist/` or `*.js.map` to `.gitignore`. While no secrets are present, source maps expose internal code structure unnecessarily.
+7. **perplexity-mcp: Broaden .env exclusions** — Currently only `.env` is excluded; consider adding `.env.local`, `.env.production`, and `.env.*` patterns to prevent accidental commits of environment-specific files.
+8. **Deep history scan** — This audit checked current file trees and recent commits. For a deeper analysis, consider running tools like `trufflehog` or `gitleaks` against full git histories to catch secrets that may have been committed and then removed (they would still exist in git history).
 
 ---
 
